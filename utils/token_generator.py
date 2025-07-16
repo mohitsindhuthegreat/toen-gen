@@ -22,11 +22,11 @@ class TokenGenerator:
         # Setup session with connection pooling and retries
         self.session = requests.Session()
         retry_strategy = Retry(
-            total=3,
-            backoff_factor=0.1,
+            total=2,
+            backoff_factor=0.05,
             status_forcelist=[429, 500, 502, 503, 504],
         )
-        adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=20, pool_maxsize=20)
+        adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=50, pool_maxsize=50)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
         
@@ -49,7 +49,7 @@ class TokenGenerator:
                 "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
                 "client_id": "100067"
             }
-            res = self.session.post(url, headers=headers, data=data, timeout=10)
+            res = self.session.post(url, headers=headers, data=data, timeout=5)
             if res.status_code != 200:
                 return None
             token_json = res.json()
@@ -175,7 +175,7 @@ class TokenGenerator:
                 'ReleaseVersion': "OB49"
             }
 
-            response = self.session.post(url, data=bytes.fromhex(edata), headers=headers, verify=False, timeout=10)
+            response = self.session.post(url, data=bytes.fromhex(edata), headers=headers, verify=False, timeout=5)
 
             if response.status_code == 200:
                 example_msg = output_pb2.Garena_420()

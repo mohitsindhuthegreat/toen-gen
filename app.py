@@ -129,11 +129,8 @@ def generate_bulk_tokens():
             uid = cred.get('uid')
             password = cred.get('password')
             
-            logging.info(f"Processing credential {i+1}/{len(credentials)}: UID={uid}")
-            
             if uid and password:
                 result = token_gen.generate_token(uid, password)
-                logging.info(f"Token generation result for {uid}: {result}")
                 return {
                     'uid': uid,
                     'status': result.get('status', 'failed'),
@@ -142,7 +139,6 @@ def generate_bulk_tokens():
                     'generated_at': datetime.now().isoformat()
                 }
             else:
-                logging.warning(f"Invalid credentials for item {i+1}: UID={uid}, Password={'*' * len(password) if password else None}")
                 return {
                     'uid': uid or 'N/A',
                     'status': 'failed',
@@ -153,7 +149,9 @@ def generate_bulk_tokens():
         
         # Process credentials in parallel with ThreadPoolExecutor
         results = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        start_time = time.time()
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=25) as executor:
             # Submit all tasks
             future_to_cred = {executor.submit(process_single_credential, (i, cred)): cred 
                              for i, cred in enumerate(credentials)}
@@ -161,10 +159,9 @@ def generate_bulk_tokens():
             # Collect results as they complete
             for future in concurrent.futures.as_completed(future_to_cred):
                 try:
-                    result = future.result(timeout=60)  # 60 second timeout per task
+                    result = future.result(timeout=15)  # Reduced timeout to 15 seconds
                     results.append(result)
                 except Exception as e:
-                    logging.error(f"Error processing credential: {str(e)}")
                     results.append({
                         'uid': 'Unknown',
                         'status': 'failed',
@@ -172,6 +169,9 @@ def generate_bulk_tokens():
                         'error': f'Processing error: {str(e)}',
                         'generated_at': datetime.now().isoformat()
                     })
+        
+        processing_time = time.time() - start_time
+        logging.info(f"Processed {len(credentials)} credentials in {processing_time:.2f} seconds")
         
         # Calculate statistics
         successful = len([r for r in results if r['status'] == 'success'])
