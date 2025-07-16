@@ -61,7 +61,22 @@ async function generateSingleToken(uid, password) {
         showError('Network error. Please try again.');
         console.error('Error:', error);
     } finally {
+        // Force hide the modal
         loadingModal.hide();
+        // Additional cleanup to ensure modal is properly hidden
+        setTimeout(() => {
+            const modalElement = document.getElementById('loadingModal');
+            if (modalElement) {
+                modalElement.classList.remove('show');
+                modalElement.style.display = 'none';
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('padding-right');
+            }
+        }, 100);
     }
 }
 
@@ -72,6 +87,17 @@ function displaySingleTokenResult(data) {
     document.getElementById('resultStatus').className = `badge ${data.status === 'success' ? 'bg-success' : 'bg-danger'}`;
     document.getElementById('resultTime').textContent = formatDateTime(data.generated_at);
     document.getElementById('resultToken').textContent = data.token || 'N/A';
+    
+    // Display validation result
+    const validationElement = document.getElementById('resultValidation');
+    if (data.validation && validationElement) {
+        if (data.validation.valid) {
+            validationElement.innerHTML = `<span class="badge bg-success">✓ Valid</span> <small>${data.validation.message}</small>`;
+        } else {
+            validationElement.innerHTML = `<span class="badge bg-warning">⚠ Unverified</span> <small>${data.validation.message}</small>`;
+        }
+        validationElement.style.display = 'block';
+    }
 }
 
 // File upload handling

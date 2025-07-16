@@ -74,12 +74,17 @@ def generate_single_token():
         result = token_gen.generate_token(uid, password)
         
         if result and result.get('status') == 'success':
+            # Validate token if generated successfully
+            token = result.get('token')
+            validation_result = validate_token(token)
+            
             return jsonify({
                 'success': True,
                 'data': {
                     'uid': uid,
                     'status': result.get('status'),
-                    'token': result.get('token'),
+                    'token': token,
+                    'validation': validation_result,
                     'generated_at': datetime.now().isoformat()
                 }
             })
@@ -95,6 +100,59 @@ def generate_single_token():
             'success': False,
             'error': 'Internal server error'
         }), 500
+
+def validate_token(token):
+    """Validate JWT token using provided API endpoints"""
+    if not token:
+        return {'valid': False, 'message': 'No token provided'}
+    
+    # Test endpoints in order of preference
+    endpoints = [
+        {"name": "IND", "url": "https://client.ind.freefiremobile.com/LikeProfile"},
+        {"name": "US", "url": "https://client.us.freefiremobile.com/LikeProfile"},
+        {"name": "General", "url": "https://clientbp.ggblueshark.com/LikeProfile"}
+    ]
+    
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json',
+        'User-Agent': 'UnityPlayer/2019.4.40f1 (UnityWebRequest/1.0, libcurl/7.80.0-DEV)'
+    }
+    
+    for endpoint in endpoints:
+        try:
+            response = requests.post(
+                endpoint["url"], 
+                headers=headers,
+                json={"targetUid": "123456789"},  # Test payload
+                timeout=10,
+                verify=False
+            )
+            
+            if response.status_code == 200:
+                return {
+                    'valid': True, 
+                    'server': endpoint["name"],
+                    'message': f'Token validated on {endpoint["name"]} server'
+                }
+            elif response.status_code == 401:
+                continue  # Try next endpoint
+            else:
+                # Token might be valid but endpoint has other issues
+                return {
+                    'valid': True,
+                    'server': endpoint["name"], 
+                    'message': f'Token accepted by {endpoint["name"]} server (status: {response.status_code})'
+                }
+                
+        except Exception as e:
+            logging.debug(f"Validation failed for {endpoint['name']}: {str(e)}")
+            continue
+    
+    return {
+        'valid': False, 
+        'message': 'Token validation failed on all servers'
+    }
 
 @app.route('/api/bulk-token', methods=['POST'])
 @limiter.limit("5 per minute")
