@@ -239,8 +239,15 @@ def download_tokens(format):
             }), 400
         
         if format == 'json':
-            # Create JSON file
-            json_data = json.dumps(tokens_data, indent=2)
+            # Create clean JSON format - only tokens array
+            clean_tokens = []
+            for token in tokens_data.get('results', []):
+                if token.get('status') == 'success' and token.get('token'):
+                    clean_tokens.append({
+                        "token": token['token']
+                    })
+            
+            json_data = json.dumps(clean_tokens, indent=2)
             filename = f"phantoms_tokens_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             
             return send_file(
@@ -251,14 +258,11 @@ def download_tokens(format):
             )
         
         elif format == 'txt':
-            # Create text file
+            # Create clean text file - only tokens
             txt_data = ""
             for token in tokens_data.get('results', []):
-                if token.get('status') == 'success':
-                    txt_data += f"UID: {token['uid']}\n"
-                    txt_data += f"Token: {token['token']}\n"
-                    txt_data += f"Generated: {token['generated_at']}\n"
-                    txt_data += "-" * 80 + "\n"
+                if token.get('status') == 'success' and token.get('token'):
+                    txt_data += f"{token['token']}\n"
             
             filename = f"phantoms_tokens_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
             
