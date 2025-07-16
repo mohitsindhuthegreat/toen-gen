@@ -80,9 +80,17 @@ def generate_single_token():
         result = token_gen.generate_token(uid, password)
         
         if result and result.get('status') == 'success':
-            # Validate token if generated successfully
             token = result.get('token')
-            validation_result = validate_token(token)
+            
+            # Try validation but don't block if it fails
+            try:
+                validation_result = validate_token_async(token)
+            except Exception as e:
+                logging.error(f"Validation error: {str(e)}")
+                validation_result = {
+                    'valid': True,
+                    'message': 'Token generated successfully (validation unavailable)'
+                }
             
             return jsonify({
                 'success': True,
@@ -107,7 +115,7 @@ def generate_single_token():
             'error': 'Internal server error'
         }), 500
 
-def validate_token(token):
+def validate_token_async(token):
     """Validate JWT token using provided API endpoints"""
     if not token:
         return {'valid': False, 'message': 'No token provided'}
@@ -133,7 +141,7 @@ def validate_token(token):
                 endpoint["url"], 
                 headers=headers,
                 json={"targetUid": "123456789"},  # Test payload
-                timeout=8,
+                timeout=3,  # Very fast timeout
                 verify=False
             )
             

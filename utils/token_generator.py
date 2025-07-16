@@ -127,16 +127,17 @@ class TokenGenerator:
             game_data.platform_type = 4
             game_data.device_form_factor = "Handheld"
             game_data.device_model = "Asus ASUS_I005DA"
-            game_data.field_60 = 32968
-            game_data.field_61 = 29815
-            game_data.field_62 = 2479
-            game_data.field_63 = 914
-            game_data.field_64 = 31213
-            game_data.field_65 = 32968
-            game_data.field_66 = 31213
-            game_data.field_67 = 32968
-            game_data.field_70 = 4
-            game_data.field_73 = 2
+            # Add random values to ensure unique tokens each time
+            game_data.field_60 = random.randint(32900, 32999)
+            game_data.field_61 = random.randint(29800, 29899)
+            game_data.field_62 = random.randint(2470, 2490)
+            game_data.field_63 = random.randint(910, 920)
+            game_data.field_64 = random.randint(31200, 31250)
+            game_data.field_65 = random.randint(32900, 32999)
+            game_data.field_66 = random.randint(31200, 31250)
+            game_data.field_67 = random.randint(32900, 32999)
+            game_data.field_70 = random.randint(3, 5)
+            game_data.field_73 = random.randint(1, 3)
             game_data.library_path = "/data/app/com.dts.freefireth-QPvBnTUhYWE-7DMZSOGdmA==/lib/arm"
             game_data.field_76 = 1
             game_data.apk_info = "5b892aaabd688e571f688053118a162b|/data/app/com.dts.freefireth-QPvBnTUhYWE-7DMZSOGdmA==/base.apk"
@@ -149,7 +150,7 @@ class TokenGenerator:
             game_data.max_texture_units = 16383
             game_data.rendering_api = 4
             game_data.encoded_field_89 = "\u0017T\u0011\u0017\u0002\b\u000eUMQ\bEZ\u0003@ZK;Z\u0002\u000eV\ri[QVi\u0003\ro\t\u0007e"
-            game_data.field_92 = 9204
+            game_data.field_92 = random.randint(9200, 9210)
             game_data.marketplace = "3rd_party"
             game_data.encryption_key = "KqsHT2B4It60T/65PGR5PXwFxQkVjGNi+IMCK3CFBCBfrNpSUA1dZnjaT3HcYchlIFFL1ZJOg0cnulKCPGD3C3h1eFQ="
             game_data.total_storage = 111107
