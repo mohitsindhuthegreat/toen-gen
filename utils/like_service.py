@@ -18,12 +18,34 @@ sys.path.append(protobuf_dir)
 import like_pb2
 import like_count_pb2
 import uid_generator_pb2
+# Import JWT decoder
+try:
+    from .jwt_decoder import JWTDecoder
+except ImportError:
+    import base64
+    import json
+    
+    class JWTDecoder:
+        def extract_uid_from_token(self, token):
+            try:
+                parts = token.split('.')
+                if len(parts) != 3:
+                    return None
+                payload = parts[1]
+                while len(payload) % 4:
+                    payload += '='
+                decoded_bytes = base64.urlsafe_b64decode(payload)
+                payload_data = json.loads(decoded_bytes.decode('utf-8'))
+                return str(payload_data.get('external_uid') or payload_data.get('uid') or payload_data.get('account_id'))
+            except Exception:
+                return None
 
 
 class LikeService:
     def __init__(self):
         self.AES_KEY = b"Yg&tc%DEuh6%Zc^8"
         self.AES_IV = b"6oyZDr22E3ychjM%"
+        self.jwt_decoder = JWTDecoder()
 
     def encrypt_message(self, plaintext):
         """Encrypt message using AES CBC"""
@@ -169,16 +191,16 @@ class LikeService:
         if tokens is None:
             return None
 
-        # Use limited tokens to avoid overwhelming the server
-        max_tokens = min(len(tokens), 12)  # Reduce to prevent rate limiting
-        selected_tokens = tokens[:max_tokens]
+        # Use ALL available tokens for maximum likes
+        max_tokens = len(tokens)  # Use ALL tokens for maximum likes
+        selected_tokens = tokens
 
-        print(f"Sending {max_tokens} REAL likes using smart batching...")
+        print(f"Sending {max_tokens} REAL likes using ALL available tokens with smart batching...")
         
-        # Send likes in small batches with delays to avoid rate limiting
+        # Send likes in optimized batches with shorter delays
         import asyncio
-        batch_size = 2  # Very small batches
-        delay_between_batches = 3  # 3 second delay between batches
+        batch_size = 5  # Bigger batches for faster processing
+        delay_between_batches = 1.5  # Shorter delay for faster completion
         
         results = []
         
@@ -188,7 +210,8 @@ class LikeService:
             
             for token_data in batch:
                 token = token_data["token"]
-                token_uid = token_data.get("uid", "Unknown")
+                # Extract UID from JWT token
+                token_uid = self.jwt_decoder.extract_uid_from_token(token) or token_data.get("uid", "Unknown")
                 print(f"Batch sending like using token from UID {token_uid}...")
                 batch_tasks.append(self.send_real_like_request(encrypted_like, token, url))
             
@@ -292,9 +315,9 @@ class LikeService:
             if tokens is None or len(tokens) == 0:
                 raise Exception(f"No valid tokens available for {server_name} server. Please generate tokens first using the Token Generator tab, then try sending likes again.")
             
-            # Use multiple tokens for better success rate
-            token_count = min(len(tokens), 10)  # Use up to 10 tokens
-            selected_tokens = tokens[:token_count]
+            # Use ALL available tokens for maximum likes
+            token_count = len(tokens)  # Use ALL available tokens
+            selected_tokens = tokens
             
             # Check first token
             first_token = selected_tokens[0]["token"]
