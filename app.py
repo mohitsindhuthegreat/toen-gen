@@ -177,8 +177,17 @@ def generate_bulk_tokens():
         successful = len([r for r in results if r['status'] == 'success'])
         failed = len(results) - successful
         
-        # Store results in session for download
-        session['bulk_results'] = results
+        # Store results in a temporary file instead of session to avoid cookie size limits
+        import tempfile
+        import pickle
+        
+        # Create temporary file to store results
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pkl')
+        pickle.dump(results, temp_file)
+        temp_file.close()
+        
+        # Store only the file path in session
+        session['bulk_results_file'] = temp_file.name
         session['bulk_timestamp'] = datetime.now().isoformat()
         
         return jsonify({
@@ -187,6 +196,8 @@ def generate_bulk_tokens():
                 'total_processed': len(results),
                 'successful': successful,
                 'failed': failed,
+                'processing_time': f"{processing_time:.2f}s",
+                'processing_speed': f"{len(results)/processing_time:.1f} tokens/sec",
                 'results': results
             }
         })
@@ -207,11 +218,20 @@ def download_tokens(format):
         data = request.args.get('data')
         if data:
             tokens_data = json.loads(data)
-        elif 'bulk_results' in session:
-            tokens_data = {
-                'results': session['bulk_results'],
-                'timestamp': session.get('bulk_timestamp', datetime.now().isoformat())
-            }
+        elif 'bulk_results_file' in session:
+            import pickle
+            try:
+                with open(session['bulk_results_file'], 'rb') as f:
+                    results = pickle.load(f)
+                tokens_data = {
+                    'results': results,
+                    'timestamp': session.get('bulk_timestamp', datetime.now().isoformat())
+                }
+            except Exception as e:
+                return jsonify({
+                    'success': False,
+                    'error': 'Failed to load token data'
+                }), 400
         else:
             return jsonify({
                 'success': False,

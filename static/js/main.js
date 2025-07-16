@@ -89,7 +89,12 @@ function initializeFileUpload() {
     uploadArea.addEventListener('dragover', handleDragOver);
     uploadArea.addEventListener('dragleave', handleDragLeave);
     uploadArea.addEventListener('drop', handleDrop);
-    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('click', (e) => {
+        // Prevent multiple clicks
+        if (e.detail === 1) {
+            fileInput.click();
+        }
+    });
 }
 
 // Handle file selection
@@ -276,6 +281,21 @@ function displayBulkResults(data) {
     document.getElementById('finalSuccess').textContent = data.successful;
     document.getElementById('finalFailed').textContent = data.failed;
     
+    // Update processing time and speed (if available)
+    if (data.processing_time) {
+        const processingTimeEl = document.getElementById('processingTime');
+        if (processingTimeEl) {
+            processingTimeEl.textContent = data.processing_time;
+        }
+    }
+    
+    if (data.processing_speed) {
+        const processingSpeedEl = document.getElementById('processingSpeed');
+        if (processingSpeedEl) {
+            processingSpeedEl.textContent = data.processing_speed;
+        }
+    }
+    
     // Update results table
     const resultsTable = document.getElementById('resultsTable');
     resultsTable.innerHTML = '';
@@ -327,8 +347,8 @@ async function downloadTokens(format) {
     }
     
     try {
-        const data = encodeURIComponent(JSON.stringify(currentTokens));
-        const url = `/api/download/${format}?data=${data}`;
+        // Use direct download without URL parameters
+        const url = `/api/download/${format}`;
         
         // Create temporary link and click it
         const link = document.createElement('a');
