@@ -36,7 +36,7 @@ class TokenGenerator:
                 "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
                 "client_id": "100067"
             }
-            res = requests.post(url, headers=headers, data=data, timeout=10)
+            res = requests.post(url, headers=headers, data=data, timeout=30)
             if res.status_code != 200:
                 return None
             token_json = res.json()
@@ -44,6 +44,12 @@ class TokenGenerator:
                 return token_json
             else:
                 return None
+        except requests.exceptions.Timeout:
+            logging.error("Request timed out while getting token")
+            return None
+        except requests.exceptions.ConnectionError:
+            logging.error("Connection error while getting token")
+            return None
         except Exception as e:
             logging.error(f"Error getting token: {str(e)}")
             return None
@@ -156,7 +162,7 @@ class TokenGenerator:
                 'ReleaseVersion': "OB49"
             }
 
-            response = requests.post(url, data=bytes.fromhex(edata), headers=headers, verify=False)
+            response = requests.post(url, data=bytes.fromhex(edata), headers=headers, verify=False, timeout=30)
 
             if response.status_code == 200:
                 example_msg = output_pb2.Garena_420()
@@ -186,6 +192,18 @@ class TokenGenerator:
                     "status": "failed",
                     "error": f"HTTP {response.status_code}: {response.reason}"
                 }
+        except requests.exceptions.Timeout:
+            logging.error("Request timed out during JWT generation")
+            return {
+                "status": "failed",
+                "error": "Request timed out - please try again"
+            }
+        except requests.exceptions.ConnectionError:
+            logging.error("Connection error during JWT generation")
+            return {
+                "status": "failed",
+                "error": "Connection error - please check your internet connection"
+            }
         except Exception as e:
             logging.error(f"Token generation error: {str(e)}")
             return {

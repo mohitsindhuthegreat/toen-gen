@@ -122,17 +122,29 @@ def generate_bulk_tokens():
         
         # Generate tokens for all credentials
         results = []
-        for cred in credentials:
+        for i, cred in enumerate(credentials):
             uid = cred.get('uid')
             password = cred.get('password')
             
+            logging.info(f"Processing credential {i+1}/{len(credentials)}: UID={uid}")
+            
             if uid and password:
                 result = token_gen.generate_token(uid, password)
+                logging.info(f"Token generation result for {uid}: {result}")
                 results.append({
                     'uid': uid,
                     'status': result.get('status', 'failed'),
                     'token': result.get('token') if result and result.get('status') == 'success' else None,
                     'error': result.get('error') if result and result.get('status') != 'success' else None,
+                    'generated_at': datetime.now().isoformat()
+                })
+            else:
+                logging.warning(f"Invalid credentials for item {i+1}: UID={uid}, Password={'*' * len(password) if password else None}")
+                results.append({
+                    'uid': uid or 'N/A',
+                    'status': 'failed',
+                    'token': None,
+                    'error': 'Invalid credentials format',
                     'generated_at': datetime.now().isoformat()
                 })
         
