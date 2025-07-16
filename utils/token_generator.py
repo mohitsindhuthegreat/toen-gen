@@ -7,6 +7,8 @@ import output_pb2
 import logging
 import warnings
 from urllib3.exceptions import InsecureRequestWarning
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Disable SSL warning
 warnings.filterwarnings("ignore", category=InsecureRequestWarning)
@@ -16,6 +18,17 @@ class TokenGenerator:
         self.cache = cache
         self.AES_KEY = b'Yg&tc%DEuh6%Zc^8'
         self.AES_IV = b'6oyZDr22E3ychjM%'
+        
+        # Setup session with connection pooling and retries
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=0.1,
+            status_forcelist=[429, 500, 502, 503, 504],
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=20, pool_maxsize=20)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
         
     def get_token(self, password, uid):
         """Get access token from Garena API"""
@@ -36,7 +49,7 @@ class TokenGenerator:
                 "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
                 "client_id": "100067"
             }
-            res = requests.post(url, headers=headers, data=data, timeout=30)
+            res = self.session.post(url, headers=headers, data=data, timeout=10)
             if res.status_code != 200:
                 return None
             token_json = res.json()
@@ -162,7 +175,7 @@ class TokenGenerator:
                 'ReleaseVersion': "OB49"
             }
 
-            response = requests.post(url, data=bytes.fromhex(edata), headers=headers, verify=False, timeout=30)
+            response = self.session.post(url, data=bytes.fromhex(edata), headers=headers, verify=False, timeout=10)
 
             if response.status_code == 200:
                 example_msg = output_pb2.Garena_420()

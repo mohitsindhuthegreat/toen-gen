@@ -29,26 +29,50 @@ class FileProcessor:
             })
         
         # Pattern for simple UID:PASSWORD format
-        simple_pattern = r'(?:uid|UID):\s*([^\s]+)\s*(?:pass|password|PASS|PASSWORD):\s*([^\s]+)'
-        simple_matches = re.findall(simple_pattern, content, re.IGNORECASE)
-        for match in simple_matches:
-            uid, password = match
-            credentials.append({
-                'uid': uid,
-                'password': password
-            })
+        simple_patterns = [
+            r'(?:uid|UID):\s*([^\s,;|]+)\s*(?:pass|password|PASS|PASSWORD):\s*([^\s,;|]+)',
+            r'(?:uid|UID)\s*=\s*([^\s,;|]+)\s*(?:pass|password|PASS|PASSWORD)\s*=\s*([^\s,;|]+)',
+            r'([^\s,;|]+)\s*:\s*([^\s,;|]+)',  # Simple uid:password format
+            r'([^\s,;|]+)\s*\|\s*([^\s,;|]+)', # uid|password format
+            r'([^\s,;|]+)\s*,\s*([^\s,;|]+)',  # uid,password format
+        ]
+        
+        for pattern in simple_patterns:
+            matches = re.findall(pattern, content, re.IGNORECASE)
+            for match in matches:
+                uid, password = match
+                # Basic validation - UID should be numeric and password should be alphanumeric
+                if uid.isdigit() and len(uid) >= 8 and len(password) >= 8:
+                    credentials.append({
+                        'uid': uid,
+                        'password': password
+                    })
         
         # Pattern for lines with UID and password separated by various delimiters
-        line_pattern = r'(\d{10,})[:\s|,;]+([A-F0-9]{64})'
-        line_matches = re.findall(line_pattern, content)
-        for match in line_matches:
-            uid, password = match
-            credentials.append({
-                'uid': uid,
-                'password': password
-            })
+        line_patterns = [
+            r'(\d{8,})[:\s|,;]+([A-F0-9a-f]{32,})',  # Hex passwords
+            r'(\d{8,})[:\s|,;]+([A-Za-z0-9]{8,})',   # Alphanumeric passwords
+        ]
         
-        return credentials
+        for pattern in line_patterns:
+            matches = re.findall(pattern, content)
+            for match in matches:
+                uid, password = match
+                credentials.append({
+                    'uid': uid,
+                    'password': password
+                })
+        
+        # Remove duplicates
+        seen = set()
+        unique_credentials = []
+        for cred in credentials:
+            key = (cred['uid'], cred['password'])
+            if key not in seen:
+                seen.add(key)
+                unique_credentials.append(cred)
+        
+        return unique_credentials
     
     def extract_credentials_from_json(self, content):
         """Extract UID and password from JSON content"""

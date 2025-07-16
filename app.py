@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, session
 from flask_caching import Cache
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -12,6 +12,9 @@ import io
 import zipfile
 from datetime import datetime
 import tempfile
+import concurrent.futures
+from threading import Lock
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -120,9 +123,9 @@ def generate_bulk_tokens():
                 'error': 'No valid credentials found in file'
             }), 400
         
-        # Generate tokens for all credentials
-        results = []
-        for i, cred in enumerate(credentials):
+        # Generate tokens for all credentials using parallel processing
+        def process_single_credential(cred_data):
+            i, cred = cred_data
             uid = cred.get('uid')
             password = cred.get('password')
             
@@ -131,26 +134,52 @@ def generate_bulk_tokens():
             if uid and password:
                 result = token_gen.generate_token(uid, password)
                 logging.info(f"Token generation result for {uid}: {result}")
-                results.append({
+                return {
                     'uid': uid,
                     'status': result.get('status', 'failed'),
                     'token': result.get('token') if result and result.get('status') == 'success' else None,
                     'error': result.get('error') if result and result.get('status') != 'success' else None,
                     'generated_at': datetime.now().isoformat()
-                })
+                }
             else:
                 logging.warning(f"Invalid credentials for item {i+1}: UID={uid}, Password={'*' * len(password) if password else None}")
-                results.append({
+                return {
                     'uid': uid or 'N/A',
                     'status': 'failed',
                     'token': None,
                     'error': 'Invalid credentials format',
                     'generated_at': datetime.now().isoformat()
-                })
+                }
+        
+        # Process credentials in parallel with ThreadPoolExecutor
+        results = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            # Submit all tasks
+            future_to_cred = {executor.submit(process_single_credential, (i, cred)): cred 
+                             for i, cred in enumerate(credentials)}
+            
+            # Collect results as they complete
+            for future in concurrent.futures.as_completed(future_to_cred):
+                try:
+                    result = future.result(timeout=60)  # 60 second timeout per task
+                    results.append(result)
+                except Exception as e:
+                    logging.error(f"Error processing credential: {str(e)}")
+                    results.append({
+                        'uid': 'Unknown',
+                        'status': 'failed',
+                        'token': None,
+                        'error': f'Processing error: {str(e)}',
+                        'generated_at': datetime.now().isoformat()
+                    })
         
         # Calculate statistics
         successful = len([r for r in results if r['status'] == 'success'])
         failed = len(results) - successful
+        
+        # Store results in session for download
+        session['bulk_results'] = results
+        session['bulk_timestamp'] = datetime.now().isoformat()
         
         return jsonify({
             'success': True,
@@ -174,15 +203,20 @@ def generate_bulk_tokens():
 def download_tokens(format):
     """Download generated tokens in specified format"""
     try:
+        # Get data from session or request
         data = request.args.get('data')
-        if not data:
+        if data:
+            tokens_data = json.loads(data)
+        elif 'bulk_results' in session:
+            tokens_data = {
+                'results': session['bulk_results'],
+                'timestamp': session.get('bulk_timestamp', datetime.now().isoformat())
+            }
+        else:
             return jsonify({
                 'success': False,
-                'error': 'No data provided'
+                'error': 'No token data available for download'
             }), 400
-        
-        # Parse the data
-        tokens_data = json.loads(data)
         
         if format == 'json':
             # Create JSON file
