@@ -281,16 +281,22 @@ def generate_bulk_tokens():
         successful = len([r for r in results if r['status'] == 'success'])
         failed = len(results) - successful
         
-        # Store results in a temporary file instead of session to avoid cookie size limits
+        # Store successful tokens in session for like feature
+        successful_tokens = [r for r in results if r['status'] == 'success' and r.get('token')]
+        if successful_tokens:
+            if 'generated_tokens' not in session:
+                session['generated_tokens'] = []
+            session['generated_tokens'].extend(successful_tokens)
+            session.modified = True
+        
+        # Store results in a temporary file for download
         import tempfile
         import pickle
         
-        # Create temporary file to store results
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pkl')
         pickle.dump(results, temp_file)
         temp_file.close()
         
-        # Store only the file path in session
         session['bulk_results_file'] = temp_file.name
         session['bulk_timestamp'] = datetime.now().isoformat()
         

@@ -63,7 +63,7 @@ class LikeService:
         # First try to load tokens from session if available
         try:
             from flask import session
-            session_tokens = session.get('bulk_tokens', [])
+            session_tokens = session.get('generated_tokens', [])
             if session_tokens:
                 # Filter tokens with valid status
                 valid_tokens = [

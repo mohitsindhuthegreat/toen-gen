@@ -102,31 +102,43 @@ class TokenGenerator:
 
             # Create game data with unique elements for each token
             game_data = my_pb2.GameData()
-            game_data.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Add microseconds for absolute uniqueness
+            unique_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+            game_data.timestamp = unique_timestamp
             game_data.game_name = "free fire"
             game_data.game_version = 1
             game_data.version_code = "1.108.3"
             game_data.os_info = "Android OS 9 / API-28 (PI/rel.cjw.20220518.114133)"
             game_data.device_type = "Handheld"
-            game_data.network_provider = "Verizon Wireless"
-            game_data.connection_type = "WIFI"
-            game_data.screen_width = 1280
-            game_data.screen_height = 960
-            game_data.dpi = "240"
+            # Randomize network provider for variety
+            providers = ["Verizon Wireless", "AT&T", "T-Mobile", "Sprint"]
+            game_data.network_provider = random.choice(providers)
+            connections = ["WIFI", "4G", "5G"]
+            game_data.connection_type = random.choice(connections)
+            # Vary screen dimensions slightly
+            game_data.screen_width = random.randint(1270, 1290)
+            game_data.screen_height = random.randint(950, 970)
+            game_data.dpi = str(random.randint(235, 245))
             game_data.cpu_info = "ARMv7 VFPv3 NEON VMH | 2400 | 4"
-            game_data.total_ram = 5951
+            game_data.total_ram = random.randint(5900, 6000)
             game_data.gpu_name = "Adreno (TM) 640"
             game_data.gpu_version = "OpenGL ES 3.0"
             # Generate unique user_id for each token
             game_data.user_id = f"Google|{str(uuid.uuid4())}"
-            # Randomize IP address slightly for uniqueness
-            game_data.ip_address = f"172.190.{random.randint(100, 120)}.{random.randint(80, 110)}"
+            # Randomize IP address for uniqueness
+            game_data.ip_address = f"172.190.{random.randint(100, 199)}.{random.randint(10, 254)}"
             game_data.language = "en"
             game_data.open_id = token_data['open_id']
             game_data.access_token = token_data['access_token']
             game_data.platform_type = 4
             game_data.device_form_factor = "Handheld"
-            game_data.device_model = "Asus ASUS_I005DA"
+            # Randomize device models for variety
+            device_models = [
+                "Asus ASUS_I005DA", "Samsung SM-G991B", "OnePlus Nord CE 5G",
+                "Xiaomi Mi 11", "Huawei P30 Pro", "Google Pixel 5", 
+                "Sony Xperia 1 III", "Motorola Edge 20"
+            ]
+            game_data.device_model = random.choice(device_models)
             # Add random values to ensure unique tokens each time
             game_data.field_60 = random.randint(32900, 32999)
             game_data.field_61 = random.randint(29800, 29899)
