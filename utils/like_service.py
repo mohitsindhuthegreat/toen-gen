@@ -145,13 +145,19 @@ class LikeService:
             "Expect": "100-continue",
             "X-Unity-Version": "2018.4.11f1",
             "X-GA": "v1 1",
-            "ReleaseVersion": "OB48",
+            "ReleaseVersion": "OB49",
         }
         
         try:
             response = requests.post(url, data=edata, headers=headers, verify=False, timeout=10)
-            return self.decode_protobuf(response.content)
-        except Exception:
+            if response.status_code == 200:
+                return self.decode_protobuf(response.content)
+            else:
+                # Log the error for debugging
+                print(f"Player info request failed with status {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"Player info request error: {str(e)}")
             return None
 
     async def process_like_request(self, uid, server_name):
