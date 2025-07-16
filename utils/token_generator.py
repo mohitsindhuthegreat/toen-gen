@@ -9,6 +9,9 @@ import warnings
 from urllib3.exceptions import InsecureRequestWarning
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from datetime import datetime
+import random
+import uuid
 
 # Disable SSL warning
 warnings.filterwarnings("ignore", category=InsecureRequestWarning)
@@ -86,12 +89,8 @@ class TokenGenerator:
     def generate_token(self, uid, password):
         """Generate JWT token for given UID and password"""
         try:
-            # Check cache first
-            cache_key = f"token_{uid}_{password}"
-            if self.cache:
-                cached_result = self.cache.get(cache_key)
-                if cached_result:
-                    return cached_result
+            # Don't use cache for unique tokens - generate fresh each time
+            # This ensures each token is unique and not the same every time
 
             # Get access token
             token_data = self.get_token(password, uid)
@@ -101,9 +100,9 @@ class TokenGenerator:
                     "error": "Invalid UID or password"
                 }
 
-            # Create game data
+            # Create game data with unique elements for each token
             game_data = my_pb2.GameData()
-            game_data.timestamp = "2024-12-05 18:15:32"
+            game_data.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             game_data.game_name = "free fire"
             game_data.game_version = 1
             game_data.version_code = "1.108.3"
@@ -118,8 +117,10 @@ class TokenGenerator:
             game_data.total_ram = 5951
             game_data.gpu_name = "Adreno (TM) 640"
             game_data.gpu_version = "OpenGL ES 3.0"
-            game_data.user_id = "Google|74b585a9-0268-4ad3-8f36-ef41d2e53610"
-            game_data.ip_address = "172.190.111.97"
+            # Generate unique user_id for each token
+            game_data.user_id = f"Google|{str(uuid.uuid4())}"
+            # Randomize IP address slightly for uniqueness
+            game_data.ip_address = f"172.190.{random.randint(100, 120)}.{random.randint(80, 110)}"
             game_data.language = "en"
             game_data.open_id = token_data['open_id']
             game_data.access_token = token_data['access_token']
@@ -188,10 +189,7 @@ class TokenGenerator:
                         "token": response_dict.get("token", "N/A")
                     }
                     
-                    # Cache the result
-                    if self.cache:
-                        self.cache.set(cache_key, result, timeout=25200)
-                    
+                    # Don't cache to ensure unique tokens every time
                     return result
                 except Exception as e:
                     logging.error(f"Failed to deserialize response: {str(e)}")

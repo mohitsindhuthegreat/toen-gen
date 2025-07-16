@@ -15,6 +15,12 @@ import tempfile
 import concurrent.futures
 from threading import Lock
 import time
+import requests
+import warnings
+from urllib3.exceptions import InsecureRequestWarning
+
+# Disable SSL warnings for validation requests
+warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -119,39 +125,52 @@ def validate_token(token):
         'User-Agent': 'UnityPlayer/2019.4.40f1 (UnityWebRequest/1.0, libcurl/7.80.0-DEV)'
     }
     
+    validation_results = []
+    
     for endpoint in endpoints:
         try:
             response = requests.post(
                 endpoint["url"], 
                 headers=headers,
                 json={"targetUid": "123456789"},  # Test payload
-                timeout=10,
+                timeout=8,
                 verify=False
             )
             
             if response.status_code == 200:
+                validation_results.append(endpoint["name"])
+                # Return immediately on first successful validation
                 return {
                     'valid': True, 
                     'server': endpoint["name"],
-                    'message': f'Token validated on {endpoint["name"]} server'
+                    'message': f'✓ Token is VALID and working on {endpoint["name"]} server',
+                    'status_code': response.status_code
                 }
             elif response.status_code == 401:
+                logging.debug(f"Token rejected by {endpoint['name']} server (401)")
                 continue  # Try next endpoint
-            else:
-                # Token might be valid but endpoint has other issues
+            elif response.status_code in [403, 422]:
+                # Token is valid but action not allowed (still a valid token)
                 return {
                     'valid': True,
                     'server': endpoint["name"], 
-                    'message': f'Token accepted by {endpoint["name"]} server (status: {response.status_code})'
+                    'message': f'✓ Token is VALID on {endpoint["name"]} server (authenticated but action restricted)',
+                    'status_code': response.status_code
                 }
+            else:
+                logging.debug(f"Unexpected response from {endpoint['name']}: {response.status_code}")
                 
+        except requests.exceptions.Timeout:
+            logging.debug(f"Timeout validating on {endpoint['name']}")
+            continue
         except Exception as e:
             logging.debug(f"Validation failed for {endpoint['name']}: {str(e)}")
             continue
     
     return {
         'valid': False, 
-        'message': 'Token validation failed on all servers'
+        'message': '⚠ Token validation failed - may be expired or invalid',
+        'tested_servers': [ep['name'] for ep in endpoints]
     }
 
 @app.route('/api/bulk-token', methods=['POST'])
