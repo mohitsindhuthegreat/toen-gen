@@ -62,17 +62,23 @@ class LikeService:
         """Load tokens for specified server"""
         try:
             if server_name == "IND":
-                path = "tokens/ind.json"
+                path = "ind_tokens_success.json"
             elif server_name in {"BR", "US", "SAC", "NA"}:
-                path = "tokens/br.json"
+                path = "br_tokens_success.json"
             else:
-                path = "tokens/bd.json"
+                path = "bd_tokens_success.json"
             
             with open(path, "r") as f:
                 tokens = json.load(f)
                 return tokens if tokens else None
         except Exception:
-            return None
+            # Fallback to check if file exists in current directory
+            try:
+                with open("ind_tokens_success.json", "r") as f:
+                    tokens = json.load(f)
+                    return tokens if tokens else None
+            except:
+                return None
 
     def enc(self, uid):
         """Encrypt UID for requests"""
@@ -104,36 +110,60 @@ class LikeService:
             return None
 
     async def send_multiple_like_requests(self, uid, server_name, url):
-        """Send multiple like requests asynchronously"""
+        """Send multiple like requests asynchronously - REAL LIKES"""
         region = server_name
         protobuf_message = self.create_like_protobuf(uid, region)
         if protobuf_message is None:
             return None
         
-        encrypted_uid = self.encrypt_message(protobuf_message)
-        if encrypted_uid is None:
+        encrypted_like = self.encrypt_message(protobuf_message)
+        if encrypted_like is None:
             return None
 
         tokens = self.load_tokens(server_name)
         if tokens is None:
             return None
 
-        # Send more likes using all available tokens
+        # Send REAL likes using proper like protobuf
         tasks = []
-        total_likes_to_send = 500  # Increase to 500 likes
+        total_likes_to_send = min(100, len(tokens) * 20)  # Send 100 real likes maximum
         
         for i in range(total_likes_to_send):
             token = tokens[i % len(tokens)]["token"]
-            tasks.append(self.send_like_request(encrypted_uid, token, url))
+            tasks.append(self.send_real_like_request(encrypted_like, token, url))
 
-        print(f"Sending {total_likes_to_send} likes using {len(tokens)} tokens...")
+        print(f"Sending {total_likes_to_send} REAL likes using {len(tokens)} tokens...")
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Count successful likes
         successful_likes = sum(1 for result in results if result is not None and "error" not in str(result))
-        print(f"Successfully sent {successful_likes}/{total_likes_to_send} likes")
+        print(f"Successfully sent {successful_likes}/{total_likes_to_send} real likes")
         
         return results
+
+    async def send_real_like_request(self, encrypted_like, token, url):
+        """Send a single REAL like request using like protobuf"""
+        try:
+            edata = bytes.fromhex(encrypted_like)
+            headers = {
+                "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 9; ASUS_Z01QD Build/PI)",
+                "Connection": "Keep-Alive",
+                "Accept-Encoding": "gzip",
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Unity-Version": "2018.4.11f1",
+                "X-GA": "v1 1",
+                "ReleaseVersion": "OB49",
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, data=edata, headers=headers, ssl=False) as response:
+                    if response.status == 200:
+                        return await response.text()
+                    else:
+                        return None
+        except Exception:
+            return None
 
     def make_player_info_request(self, encrypt, server_name, token):
         """Get player information"""
