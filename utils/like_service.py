@@ -124,25 +124,25 @@ class LikeService:
         if tokens is None:
             return None
 
-        # Send REAL likes using ALL available tokens extensively
+        # Send REAL likes using ONE TOKEN PER LIKE for maximum real likes
         tasks = []
-        likes_per_token = 50  # Send 50 likes per token
-        total_likes_to_send = len(tokens) * likes_per_token
+        total_likes_to_send = len(tokens)  # One like per token
         
-        print(f"Using ALL {len(tokens)} tokens to send maximum real likes...")
+        print(f"Using {len(tokens)} tokens - ONE TOKEN PER LIKE for maximum real likes...")
         
         for token_data in tokens:
             token = token_data["token"]
-            # Send multiple likes per token
-            for i in range(likes_per_token):
-                tasks.append(self.send_real_like_request(encrypted_like, token, url))
+            token_uid = token_data.get("uid", "Unknown")
+            print(f"Using token from UID {token_uid} to send 1 real like...")
+            # Send ONE like per token for maximum effectiveness
+            tasks.append(self.send_real_like_request(encrypted_like, token, url))
 
-        print(f"Sending {total_likes_to_send} REAL likes using ALL {len(tokens)} tokens...")
+        print(f"Sending {total_likes_to_send} REAL likes using {len(tokens)} different tokens...")
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Count successful likes
         successful_likes = sum(1 for result in results if result is not None and "error" not in str(result))
-        print(f"Successfully sent {successful_likes}/{total_likes_to_send} real likes using ALL tokens")
+        print(f"Successfully sent {successful_likes}/{total_likes_to_send} real likes (one per token)")
         
         return results
 
@@ -259,9 +259,9 @@ class LikeService:
                 },
                 "system_info": {
                     "tokens_used": len(tokens),
-                    "requests_sent": len(tokens) * 50,
+                    "requests_sent": len(tokens),
                     "api_status": "Working correctly",
-                    "note": "Using ALL tokens to send maximum real likes"
+                    "note": "Using ONE token per like for maximum real likes"
                 }
             }
 
