@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}API Documentation - Phantoms JWT Generator{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-3">
+            <div class="sticky-top" style="top: 20px;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>Contents
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <nav class="nav flex-column">
+                            <a class="nav-link" href="#overview">Overview</a>
+                            <a class="nav-link" href="#authentication">Authentication</a>
+                            <a class="nav-link" href="#endpoints">Endpoints</a>
+                            <a class="nav-link ps-3" href="#single-token">Single Token</a>
+                            <a class="nav-link ps-3" href="#bulk-tokens">Bulk Tokens</a>
+                            <a class="nav-link ps-3" href="#download">Download</a>
+                            <a class="nav-link" href="#rate-limits">Rate Limits</a>
+                            <a class="nav-link" href="#examples">Examples</a>
+                            <a class="nav-link" href="#errors">Error Handling</a>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-9">
+            <div class="api-docs">
+                <h1 class="mb-4">
+                    <i class="fas fa-code me-3"></i>API Documentation
+                </h1>
+                
+                <!-- Overview -->
+                <section id="overview" class="mb-5">
+                    <h2>Overview</h2>
+                    <p>The Phantoms JWT Generator API provides programmatic access to JWT token generation for Garena Free Fire accounts. The API supports both single token generation and bulk processing capabilities.</p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Base URL:</strong> <code>{{ request.url_root }}api/</code>
+                    </div>
+                </section>
+                
+                <!-- Authentication -->
+                <section id="authentication" class="mb-5">
+                    <h2>Authentication</h2>
+                    <p>Currently, the API does not require authentication. However, rate limiting is enforced to prevent abuse.</p>
+                </section>
+                
+                <!-- Endpoints -->
+                <section id="endpoints" class="mb-5">
+                    <h2>Endpoints</h2>
+                    
+                    <!-- Single Token -->
+                    <div id="single-token" class="endpoint-section">
+                        <h3>Generate Single Token</h3>
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="http-method post">POST</span>
+                                <code>/api/token</code>
+                            </div>
+                            
+                            <div class="endpoint-body">
+                                <h5>Description</h5>
+                                <p>Generate a JWT token for a single Garena account.</p>
+                                
+                                <h5>Request Body</h5>
+                                <pre><code>{
+  "uid": "1234567890",
+  "password": "ABC123DEF456..."
+}</code></pre>
+                                
+                                <h5>Response</h5>
+                                <pre><code>{
+  "success": true,
+  "data": {
+    "uid": "1234567890",
+    "status": "success",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "generated_at": "2024-01-01T12:00:00"
+  }
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bulk Tokens -->
+                    <div id="bulk-tokens" class="endpoint-section">
+                        <h3>Generate Bulk Tokens</h3>
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="http-method post">POST</span>
+                                <code>/api/bulk-token</code>
+                            </div>
+                            
+                            <div class="endpoint-body">
+                                <h5>Description</h5>
+                                <p>Generate JWT tokens for multiple accounts by uploading a file.</p>
+                                
+                                <h5>Request</h5>
+                                <p>Send a multipart/form-data request with a file field.</p>
+                                
+                                <h5>Supported File Formats</h5>
+                                <ul>
+                                    <li><strong>JSON:</strong> Array of credential objects</li>
+                                    <li><strong>Text:</strong> UID and password pairs</li>
+                                </ul>
+                                
+                                <h5>Response</h5>
+                                <pre><code>{
+  "success": true,
+  "data": {
+    "total_processed": 10,
+    "successful": 8,
+    "failed": 2,
+    "results": [
+      {
+        "uid": "1234567890",
+        "status": "success",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "generated_at": "2024-01-01T12:00:00"
+      },
+      ...
+    ]
+  }
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Download -->
+                    <div id="download" class="endpoint-section">
+                        <h3>Download Results</h3>
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="http-method get">GET</span>
+                                <code>/api/download/&lt;format&gt;</code>
+                            </div>
+                            
+                            <div class="endpoint-body">
+                                <h5>Description</h5>
+                                <p>Download generated tokens in the specified format.</p>
+                                
+                                <h5>Parameters</h5>
+                                <ul>
+                                    <li><strong>format:</strong> Either 'json' or 'txt'</li>
+                                    <li><strong>data:</strong> URL-encoded JSON data of tokens</li>
+                                </ul>
+                                
+                                <h5>Example</h5>
+                                <pre><code>GET /api/download/json?data={"results":[...]}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Rate Limits -->
+                <section id="rate-limits" class="mb-5">
+                    <h2>Rate Limits</h2>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Endpoint</th>
+                                    <th>Limit</th>
+                                    <th>Window</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Single Token</td>
+                                    <td>10 requests</td>
+                                    <td>per minute</td>
+                                </tr>
+                                <tr>
+                                    <td>Bulk Tokens</td>
+                                    <td>5 requests</td>
+                                    <td>per minute</td>
+                                </tr>
+                                <tr>
+                                    <td>Download</td>
+                                    <td>10 requests</td>
+                                    <td>per minute</td>
+                                </tr>
+                                <tr>
+                                    <td>Global</td>
+                                    <td>200 requests</td>
+                                    <td>per day</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                
+                <!-- Examples -->
+                <section id="examples" class="mb-5">
+                    <h2>Examples</h2>
+                    
+                    <h3>cURL Examples</h3>
+                    
+                    <h4>Single Token Generation</h4>
+                    <pre><code>curl -X POST {{ request.url_root }}api/token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uid": "1234567890",
+    "password": "ABC123DEF456..."
+  }'</code></pre>
+                    
+                    <h4>Bulk Token Generation</h4>
+                    <pre><code>curl -X POST {{ request.url_root }}api/bulk-token \
+  -F "file=@credentials.json"</code></pre>
+                    
+                    <h3>JavaScript Example</h3>
+                    <pre><code>// Single token generation
+const response = await fetch('{{ request.url_root }}api/token', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    uid: '1234567890',
+    password: 'ABC123DEF456...'
+  })
+});
+
+const result = await response.json();
+console.log(result);</code></pre>
+                    
+                    <h3>Python Example</h3>
+                    <pre><code>import requests
+
+# Single token generation
+response = requests.post('{{ request.url_root }}api/token', 
+  json={
+    'uid': '1234567890',
+    'password': 'ABC123DEF456...'
+  }
+)
+
+result = response.json()
+print(result)</code></pre>
+                </section>
+                
+                <!-- Error Handling -->
+                <section id="errors" class="mb-5">
+                    <h2>Error Handling</h2>
+                    <p>The API uses standard HTTP status codes to indicate success or failure:</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Status Code</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="badge bg-success">200</span></td>
+                                    <td>Success</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-warning">400</span></td>
+                                    <td>Bad Request - Invalid parameters</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-danger">429</span></td>
+                                    <td>Rate Limit Exceeded</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-danger">500</span></td>
+                                    <td>Internal Server Error</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h3>Error Response Format</h3>
+                    <pre><code>{
+  "success": false,
+  "error": "Description of the error"
+}</code></pre>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="fas fa-ghost me-3"></i>
+                    Phantoms JWT Generator
+                </h1>
+                <p class="lead mb-4">
+                    Professional JWT token generation with high-speed bulk processing capabilities
+                </p>
+                <div class="hero-stats">
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <i class="fas fa-bolt text-warning"></i>
+                                <div class="stat-number">Fast</div>
+                                <div class="stat-label">Processing</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <i class="fas fa-shield-alt text-success"></i>
+                                <div class="stat-number">Secure</div>
+                                <div class="stat-label">Generation</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <i class="fas fa-layer-group text-info"></i>
+                                <div class="stat-number">Bulk</div>
+                                <div class="stat-label">Processing</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <!-- Token Generation Tabs -->
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <ul class="nav nav-tabs card-header-tabs" id="tokenTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single" type="button" role="tab">
+                        <i class="fas fa-user me-2"></i>Single Token
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="bulk-tab" data-bs-toggle="tab" data-bs-target="#bulk" type="button" role="tab">
+                        <i class="fas fa-users me-2"></i>Bulk Processing
+                    </button>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card-body">
+            <div class="tab-content" id="tokenTabsContent">
+                <!-- Single Token Tab -->
+                <div class="tab-pane fade show active" id="single" role="tabpanel">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h4 class="mb-3">
+                                <i class="fas fa-key me-2"></i>Generate Single Token
+                            </h4>
+                            <form id="singleTokenForm">
+                                <div class="mb-3">
+                                    <label for="uid" class="form-label">UID</label>
+                                    <input type="text" class="form-control" id="uid" placeholder="Enter UID" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" placeholder="Enter Password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-cog me-2"></i>Generate Token
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-lg-6">
+                            <h4 class="mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Instructions
+                            </h4>
+                            <div class="alert alert-info">
+                                <ul class="mb-0">
+                                    <li>Enter your Garena account UID</li>
+                                    <li>Enter your account password</li>
+                                    <li>Click "Generate Token" to get your JWT</li>
+                                    <li>Copy the generated token for use</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Single Token Results -->
+                    <div id="singleResult" class="mt-4" style="display: none;">
+                        <h5>
+                            <i class="fas fa-check-circle text-success me-2"></i>Token Generated
+                        </h5>
+                        <div class="result-card">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <strong>UID:</strong>
+                                    <span id="resultUid"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Status:</strong>
+                                    <span id="resultStatus" class="badge"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Generated:</strong>
+                                    <span id="resultTime"></span>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <strong>Token:</strong>
+                                    <div class="token-display">
+                                        <code id="resultToken"></code>
+                                        <button class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyToClipboard('resultToken')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bulk Processing Tab -->
+                <div class="tab-pane fade" id="bulk" role="tabpanel">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h4 class="mb-3">
+                                <i class="fas fa-upload me-2"></i>Upload Credentials File
+                            </h4>
+                            <div class="upload-area" id="uploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-muted"></i>
+                                <p class="mb-2">Drag and drop your file here or</p>
+                                <input type="file" id="fileInput" class="d-none" accept=".txt,.json">
+                                <button class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fas fa-folder-open me-2"></i>Choose File
+                                </button>
+                                <p class="text-muted mt-2 mb-0">Supported formats: .txt, .json</p>
+                            </div>
+                            
+                            <div id="fileInfo" class="mt-3" style="display: none;">
+                                <div class="alert alert-success">
+                                    <i class="fas fa-file-check me-2"></i>
+                                    <strong>File loaded:</strong> <span id="fileName"></span>
+                                    <br>
+                                    <strong>Credentials found:</strong> <span id="credCount"></span>
+                                </div>
+                                <button class="btn btn-success btn-lg" id="processBulk">
+                                    <i class="fas fa-play me-2"></i>Process All Tokens
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <h4 class="mb-3">
+                                <i class="fas fa-file-alt me-2"></i>Supported Formats
+                            </h4>
+                            <div class="format-examples">
+                                <div class="format-item">
+                                    <strong>JSON Format:</strong>
+                                    <pre><code>[
+  {
+    "guest_account_info": {
+      "com.garena.msdk.guest_uid": "1234567890",
+      "com.garena.msdk.guest_password": "ABC123..."
+    }
+  }
+]</code></pre>
+                                </div>
+                                <div class="format-item">
+                                    <strong>Text Format:</strong>
+                                    <pre><code>UID: 1234567890
+PASSWORD: ABC123...
+
+1234567890:ABC123...</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bulk Processing Results -->
+                    <div id="bulkProgress" class="mt-4" style="display: none;">
+                        <h5>
+                            <i class="fas fa-spinner fa-spin me-2"></i>Processing Tokens...
+                        </h5>
+                        <div class="progress mb-3">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="processing-stats">
+                            <span class="badge bg-primary me-2">Processing: <span id="currentItem">0</span></span>
+                            <span class="badge bg-success me-2">Success: <span id="successCount">0</span></span>
+                            <span class="badge bg-danger">Failed: <span id="failCount">0</span></span>
+                        </div>
+                    </div>
+                    
+                    <div id="bulkResult" class="mt-4" style="display: none;">
+                        <div class="result-header">
+                            <h5>
+                                <i class="fas fa-check-circle text-success me-2"></i>Processing Complete
+                            </h5>
+                            <div class="result-summary">
+                                <span class="badge bg-primary me-2">Total: <span id="totalProcessed">0</span></span>
+                                <span class="badge bg-success me-2">Success: <span id="finalSuccess">0</span></span>
+                                <span class="badge bg-danger me-2">Failed: <span id="finalFailed">0</span></span>
+                            </div>
+                            <div class="download-buttons">
+                                <button class="btn btn-success" id="downloadJson">
+                                    <i class="fas fa-download me-2"></i>Download JSON
+                                </button>
+                                <button class="btn btn-primary" id="downloadTxt">
+                                    <i class="fas fa-download me-2"></i>Download TXT
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="results-table-container">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>UID</th>
+                                        <th>Status</th>
+                                        <th>Token</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Generating Token...</h5>
+                <p class="text-muted mb-0">Please wait while we process your request</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Error
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeApp();
+    });
+</script>
+{% endblock %}
