@@ -1,0 +1,16 @@
+# Google App Engine deployment (alternative)
+runtime: python311
+
+env_variables:
+  SESSION_SECRET: "your-secret-key-here"
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 10
+
+handlers:
+- url: /static
+  static_dir: static
+  
+- url: /.*
+  script: auto

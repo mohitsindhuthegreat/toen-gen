@@ -20,31 +20,16 @@ wheels/
 .installed.cfg
 *.egg
 
-# Flask
-instance/
-.webassets-cache
-
-# Testing
-.pytest_cache/
-test_*.py
-debug_*.py
-generate_*.py
-process_*.py
-quick_test.py
-batch_process_tokens.py
-
-# Test data
-test_*.json
-*_success.json
-tokens/
-attached_assets/
+# Virtual Environment
+venv/
+env/
+ENV/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
@@ -52,3 +37,23 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Environment Variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+temp_*
+test_webhook.txt
+
+# Deployment
+.vercel/
+.netlify/
+
+# Flask
+instance/
+.webassets-cache
+
+# Cache
+.cache/

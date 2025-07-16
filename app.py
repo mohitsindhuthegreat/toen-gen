@@ -31,6 +31,10 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "phantoms-jwt-secret-key-2024")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+# Deployment optimizations
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year cache for static files
+
 # Configure cache
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 25200})
 
@@ -322,12 +326,15 @@ def generate_bulk_tokens():
         successful = len([r for r in results if r['status'] == 'success'])
         failed = len(results) - successful
         
-        # Store successful tokens in session for like feature
+        # Store successful tokens in session for like feature (limit to prevent cookie overflow)
         successful_tokens = [r for r in results if r['status'] == 'success' and r.get('token')]
         if successful_tokens:
             if 'generated_tokens' not in session:
                 session['generated_tokens'] = []
-            session['generated_tokens'].extend(successful_tokens)
+            # Limit tokens to prevent session cookie overflow in deployment
+            max_session_tokens = 50
+            session['generated_tokens'].extend(successful_tokens[:max_session_tokens])
+            session['generated_tokens'] = session['generated_tokens'][-max_session_tokens:]  # Keep latest 50
             session.modified = True
         
         # Store results in a temporary file for download
