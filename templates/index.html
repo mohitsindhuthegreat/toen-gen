@@ -57,6 +57,11 @@
                         <i class="fas fa-users me-2"></i>Bulk Processing
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="like-tab" data-bs-toggle="tab" data-bs-target="#like" type="button" role="tab">
+                        <i class="fas fa-heart me-2"></i>Send Likes
+                    </button>
+                </li>
             </ul>
         </div>
         
@@ -245,6 +250,94 @@ PASSWORD: ABC123...
                                 <tbody id="resultsTable">
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Like Feature Tab -->
+                <div class="tab-pane fade" id="like" role="tabpanel">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h4 class="mb-3">
+                                <i class="fas fa-heart me-2"></i>Send Likes to Player
+                            </h4>
+                            <form id="likeForm">
+                                <div class="mb-3">
+                                    <label for="targetUid" class="form-label">Target UID</label>
+                                    <input type="text" class="form-control" id="targetUid" placeholder="Enter player UID to send likes" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="serverName" class="form-label">Server Region</label>
+                                    <select class="form-control" id="serverName" required>
+                                        <option value="">Select Server</option>
+                                        <option value="IND">India (IND)</option>
+                                        <option value="BR">Brazil (BR)</option>
+                                        <option value="US">United States (US)</option>
+                                        <option value="SAC">South America (SAC)</option>
+                                        <option value="NA">North America (NA)</option>
+                                        <option value="BD">Bangladesh (BD)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-danger btn-lg">
+                                    <i class="fas fa-heart me-2"></i>Send 100 Likes
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-lg-6">
+                            <h4 class="mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Like Feature
+                            </h4>
+                            <div class="alert alert-info">
+                                <ul class="mb-0">
+                                    <li>Sends 100 likes to any player</li>
+                                    <li>Uses your generated tokens for authentication</li>
+                                    <li>Works on all server regions</li>
+                                    <li>Shows before/after like count</li>
+                                    <li>Rate limited: 20 requests per hour</li>
+                                </ul>
+                            </div>
+                            <div class="alert alert-warning">
+                                <strong>Note:</strong> Make sure you have generated tokens first using the bulk processing feature.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Like Results -->
+                    <div id="likeResult" class="mt-4" style="display: none;">
+                        <h5>
+                            <i class="fas fa-heart text-danger me-2"></i>Like Operation Result
+                        </h5>
+                        <div class="result-card">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Player UID:</strong>
+                                    <span id="likePlayerUid"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Player Name:</strong>
+                                    <span id="likePlayerName"></span>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <strong>Likes Before:</strong>
+                                    <span id="likesBefore" class="badge bg-secondary"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Likes After:</strong>
+                                    <span id="likesAfter" class="badge bg-success"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Likes Added:</strong>
+                                    <span id="likesAdded" class="badge bg-primary"></span>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <strong>Status:</strong>
+                                    <div id="likeStatus" class="alert mt-2"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

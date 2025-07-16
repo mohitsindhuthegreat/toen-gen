@@ -8,6 +8,7 @@ function initializeApp() {
     initializeFileUpload();
     initializeBulkProcessing();
     initializeDownloadButtons();
+    initializeLikeFeature();
 }
 
 // Single token form handling
@@ -546,6 +547,80 @@ function throttle(func, limit) {
             setTimeout(() => inThrottle = false, limit);
         }
     };
+}
+
+// Initialize like feature
+function initializeLikeFeature() {
+    const likeForm = document.getElementById('likeForm');
+    if (!likeForm) return;
+
+    likeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const targetUid = document.getElementById('targetUid').value.trim();
+        const serverName = document.getElementById('serverName').value;
+        
+        if (!targetUid || !serverName) {
+            showError('Please enter target UID and select server region');
+            return;
+        }
+        
+        await sendLikes(targetUid, serverName);
+    });
+}
+
+// Send likes to player
+async function sendLikes(uid, serverName) {
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    const likeResult = document.getElementById('likeResult');
+    
+    try {
+        // Show loading
+        loadingModal.show();
+        
+        const response = await fetch('/api/like', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ uid, server_name: serverName })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Display like result
+            displayLikeResult(result.data);
+            likeResult.style.display = 'block';
+            likeResult.scrollIntoView({ behavior: 'smooth' });
+            showToast('✅ Likes sent successfully!', 'success');
+        } else {
+            showError(result.error || 'Failed to send likes');
+        }
+    } catch (error) {
+        showError('Network error. Please try again.');
+        console.error('Error:', error);
+    } finally {
+        loadingModal.hide();
+    }
+}
+
+// Display like operation result
+function displayLikeResult(data) {
+    document.getElementById('likePlayerUid').textContent = data.player.uid;
+    document.getElementById('likePlayerName').textContent = data.player.nickname;
+    document.getElementById('likesBefore').textContent = data.likes.before;
+    document.getElementById('likesAfter').textContent = data.likes.after;
+    document.getElementById('likesAdded').textContent = data.likes.added_by_api;
+    
+    const statusElement = document.getElementById('likeStatus');
+    if (data.status === 1) {
+        statusElement.className = 'alert alert-success mt-2';
+        statusElement.textContent = data.message;
+    } else {
+        statusElement.className = 'alert alert-warning mt-2';
+        statusElement.textContent = data.message;
+    }
 }
 
 // Export functions for global access

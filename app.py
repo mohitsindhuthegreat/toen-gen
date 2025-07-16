@@ -7,6 +7,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from utils.token_generator import TokenGenerator
 from utils.file_processor import FileProcessor
+from utils.like_service import LikeService
 import json
 import io
 import zipfile
@@ -369,6 +370,49 @@ def download_tokens(format):
             
     except Exception as e:
         logging.error(f"Error downloading tokens: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error'
+        }), 500
+
+@app.route('/api/like', methods=['POST'])
+@limiter.limit("20 per hour")
+def send_likes():
+    """Send likes to a player"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+
+        uid = data.get('uid')
+        server_name = data.get('server_name', '').upper()
+
+        if not uid or not server_name:
+            return jsonify({'success': False, 'error': 'UID and server_name are required'}), 400
+
+        # Initialize like service
+        like_service = LikeService()
+        
+        # Process like request asynchronously
+        import asyncio
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(like_service.process_like_request(uid, server_name))
+            loop.close()
+            
+            return jsonify({
+                'success': True,
+                'data': result
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+
+    except Exception as e:
+        logging.error(f"Like service error: {str(e)}")
         return jsonify({
             'success': False,
             'error': 'Internal server error'

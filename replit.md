@@ -2,11 +2,20 @@
 
 ## Overview
 
-The Phantoms JWT Generator is a Flask-based web application that provides JWT token generation services for Garena Free Fire accounts. It supports both single token generation and bulk processing capabilities with a clean web interface and REST API endpoints.
+The Phantoms JWT Generator is a Flask-based web application that provides JWT token generation services for Garena Free Fire accounts. It supports both single token generation and bulk processing capabilities with a clean web interface and REST API endpoints. Now includes like feature for sending likes to players using generated tokens.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes
+
+**2025-07-16**: 
+- ✅ Fixed unique token generation issue by adding randomization to protobuf fields
+- ✅ Added complete like feature with frontend tab and backend API endpoint
+- ✅ Processed credentials file to generate tokens for IND server (3 tokens successfully generated)
+- ✅ Fixed popup closing issues and network timeouts
+- ✅ Token generation speed optimized to under 1 second
 
 ## System Architecture
 
