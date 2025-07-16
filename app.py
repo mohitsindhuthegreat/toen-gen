@@ -258,11 +258,18 @@ def download_tokens(format):
             )
         
         elif format == 'txt':
-            # Create clean text file - only tokens
-            txt_data = ""
+            # Create formatted text file with proper structure
+            txt_data = "# Phantoms JWT Tokens\n"
+            txt_data += f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            txt_data += f"# Total Tokens: {len([t for t in tokens_data.get('results', []) if t.get('status') == 'success'])}\n"
+            txt_data += "#" + "="*80 + "\n\n"
+            
+            token_count = 0
             for token in tokens_data.get('results', []):
                 if token.get('status') == 'success' and token.get('token'):
-                    txt_data += f"{token['token']}\n"
+                    token_count += 1
+                    txt_data += f"# Token {token_count}\n"
+                    txt_data += f"{token['token']}\n\n"
             
             filename = f"phantoms_tokens_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
             
