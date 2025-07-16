@@ -60,6 +60,37 @@ class LikeService:
 
     def load_tokens(self, server_name):
         """Load tokens for specified server"""
+        # First try to generate fresh tokens using the token generator
+        try:
+            from .token_generator import TokenGenerator
+            token_gen = TokenGenerator()
+            
+            # Default test credentials - you should replace these with real ones
+            test_credentials = [
+                {"uid": "1234567890", "password": "testpass123"},
+                {"uid": "9876543210", "password": "testpass456"}
+            ]
+            
+            generated_tokens = []
+            for cred in test_credentials:
+                try:
+                    result = token_gen.generate_token(cred["uid"], cred["password"])
+                    if result and result.get("status") == "success":
+                        generated_tokens.append({
+                            "uid": cred["uid"],
+                            "token": result.get("token")
+                        })
+                except Exception:
+                    continue
+            
+            if generated_tokens:
+                print(f"Generated {len(generated_tokens)} fresh tokens for {server_name}")
+                return generated_tokens
+                
+        except Exception as e:
+            print(f"Failed to generate fresh tokens: {str(e)}")
+        
+        # Fallback to file loading
         try:
             if server_name == "IND":
                 path = "ind_tokens_success.json"
@@ -70,15 +101,21 @@ class LikeService:
             
             with open(path, "r") as f:
                 tokens = json.load(f)
-                return tokens if tokens else None
-        except Exception:
-            # Fallback to check if file exists in current directory
-            try:
-                with open("ind_tokens_success.json", "r") as f:
-                    tokens = json.load(f)
-                    return tokens if tokens else None
-            except:
-                return None
+                if tokens and len(tokens) > 0:
+                    print(f"Loaded {len(tokens)} tokens from {path}")
+                    return tokens
+                else:
+                    print(f"Token file {path} is empty")
+                    return None
+        except FileNotFoundError:
+            print(f"Token file not found for {server_name} server")
+            return None
+        except json.JSONDecodeError:
+            print(f"Invalid JSON in token file for {server_name} server")
+            return None
+        except Exception as e:
+            print(f"Error loading tokens: {str(e)}")
+            return None
 
     def enc(self, uid):
         """Encrypt UID for requests"""
@@ -208,10 +245,13 @@ class LikeService:
         """Process complete like operation"""
         try:
             tokens = self.load_tokens(server_name)
-            if tokens is None:
-                raise Exception("Failed to load tokens.")
+            if tokens is None or len(tokens) == 0:
+                raise Exception(f"No tokens available for {server_name} server. Please check your token files or generate new tokens first.")
             
             token = tokens[0]["token"]
+            if not token or token == "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sample_token_placeholder":
+                raise Exception(f"Invalid token found for {server_name} server. Please generate valid tokens first.")
+                
             encrypted_uid = self.enc(uid)
 
             # Get initial player info
