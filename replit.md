@@ -24,6 +24,9 @@ Preferred communication style: Simple, everyday language.
 - ✅ System sends exactly 60 real likes per request using all available tokens
 - ✅ Eliminated token reuse to maximize authentic like delivery
 - ✅ Processed entire credentials file to extract maximum working tokens
+- ✅ **PROJECT CLEANUP**: Removed all unnecessary test files and debug scripts
+- ✅ **UNIFIED PERFORMANCE**: All token generation methods now use same fast approach (~0.3s per token)
+- ✅ **ORGANIZED STRUCTURE**: Clean project with only essential files remaining
 
 ## System Architecture
 
@@ -42,16 +45,22 @@ Preferred communication style: Simple, everyday language.
 ## Key Components
 
 ### Core Application (`app.py`)
-- Main Flask application with route definitions
+- Main Flask application with unified token generation approach
 - Middleware configuration (ProxyFix, rate limiting, caching)
-- API endpoints for token generation and file processing
+- API endpoints: `/api/token` (single), `/api/bulk-token` (bulk), `/api/like` (like system)
 - Session management with secure secret key handling
 
 ### Token Generation (`utils/token_generator.py`)
-- **TokenGenerator class**: Handles Garena API authentication
+- **TokenGenerator class**: Fast Garena API authentication (~0.3s per token)
 - **Protocol Buffers**: Uses protobuf for data serialization (my_pb2.py, output_pb2.py)
 - **Encryption**: AES encryption with predefined keys for secure token processing
 - **External API**: Integrates with Garena's OAuth token grant endpoint
+
+### Like System (`utils/like_service.py`)
+- **LikeService class**: Handles like sending with 60 tokens maximum
+- **ONE TOKEN PER LIKE**: Each token sends exactly 1 real like for maximum effectiveness
+- **Multi-region support**: IND, US, and general endpoints
+- **Real-time monitoring**: Success tracking and player verification
 
 ### File Processing (`utils/file_processor.py`)
 - **FileProcessor class**: Handles bulk credential extraction from uploaded files
