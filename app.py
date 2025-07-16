@@ -85,6 +85,19 @@ def generate_single_token():
         if result and result.get('status') == 'success':
             token = result.get('token')
             
+            # Store token in session for like feature
+            if 'generated_tokens' not in session:
+                session['generated_tokens'] = []
+            
+            token_data = {
+                'uid': uid,
+                'token': token,
+                'status': 'success',
+                'generated_at': datetime.now().isoformat()
+            }
+            session['generated_tokens'].append(token_data)
+            session.modified = True
+            
             # Fast validation - skip timeout-prone validation
             validation_result = {
                 'valid': True,

@@ -60,37 +60,28 @@ class LikeService:
 
     def load_tokens(self, server_name):
         """Load tokens for specified server"""
-        # First try to generate fresh tokens using the token generator
+        # First try to load tokens from session if available
         try:
-            from .token_generator import TokenGenerator
-            token_gen = TokenGenerator()
-            
-            # Default test credentials - you should replace these with real ones
-            test_credentials = [
-                {"uid": "1234567890", "password": "testpass123"},
-                {"uid": "9876543210", "password": "testpass456"}
-            ]
-            
-            generated_tokens = []
-            for cred in test_credentials:
-                try:
-                    result = token_gen.generate_token(cred["uid"], cred["password"])
-                    if result and result.get("status") == "success":
-                        generated_tokens.append({
-                            "uid": cred["uid"],
-                            "token": result.get("token")
-                        })
-                except Exception:
-                    continue
-            
-            if generated_tokens:
-                print(f"Generated {len(generated_tokens)} fresh tokens for {server_name}")
-                return generated_tokens
-                
+            from flask import session
+            session_tokens = session.get('bulk_tokens', [])
+            if session_tokens:
+                # Filter tokens with valid status
+                valid_tokens = [
+                    {"uid": token["uid"], "token": token["token"]} 
+                    for token in session_tokens 
+                    if token.get("status") == "success" and token.get("token") and 
+                    not token.get("token").endswith("sample_token_placeholder")
+                ]
+                if valid_tokens:
+                    print(f"Using {len(valid_tokens)} tokens from current session for {server_name}")
+                    return valid_tokens
         except Exception as e:
-            print(f"Failed to generate fresh tokens: {str(e)}")
+            print(f"Failed to load session tokens: {str(e)}")
         
-        # Fallback to file loading
+        # No automatic token generation - user must provide tokens
+        print(f"No session tokens found for {server_name} server")
+        
+        # Last resort: try file loading but validate tokens
         try:
             if server_name == "IND":
                 path = "ind_tokens_success.json"
@@ -102,8 +93,17 @@ class LikeService:
             with open(path, "r") as f:
                 tokens = json.load(f)
                 if tokens and len(tokens) > 0:
-                    print(f"Loaded {len(tokens)} tokens from {path}")
-                    return tokens
+                    # Filter out placeholder tokens
+                    valid_tokens = [
+                        token for token in tokens 
+                        if token.get("token") and not token.get("token").endswith("sample_token_placeholder")
+                    ]
+                    if valid_tokens:
+                        print(f"Loaded {len(valid_tokens)} valid tokens from {path}")
+                        return valid_tokens
+                    else:
+                        print(f"All tokens in {path} are placeholders")
+                        return None
                 else:
                     print(f"Token file {path} is empty")
                     return None
@@ -246,11 +246,11 @@ class LikeService:
         try:
             tokens = self.load_tokens(server_name)
             if tokens is None or len(tokens) == 0:
-                raise Exception(f"No tokens available for {server_name} server. Please check your token files or generate new tokens first.")
+                raise Exception(f"No valid tokens available for {server_name} server. Please generate tokens first using the Token Generator tab, then try sending likes again.")
             
             token = tokens[0]["token"]
-            if not token or token == "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sample_token_placeholder":
-                raise Exception(f"Invalid token found for {server_name} server. Please generate valid tokens first.")
+            if not token or token.endswith("sample_token_placeholder"):
+                raise Exception(f"No valid authentication tokens found for {server_name} server. Please generate real tokens first using the Token Generator tab.")
                 
             encrypted_uid = self.enc(uid)
 
