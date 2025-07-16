@@ -124,20 +124,25 @@ class LikeService:
         if tokens is None:
             return None
 
-        # Send REAL likes using proper like protobuf
+        # Send REAL likes using ALL available tokens extensively
         tasks = []
-        total_likes_to_send = min(100, len(tokens) * 20)  # Send 100 real likes maximum
+        likes_per_token = 50  # Send 50 likes per token
+        total_likes_to_send = len(tokens) * likes_per_token
         
-        for i in range(total_likes_to_send):
-            token = tokens[i % len(tokens)]["token"]
-            tasks.append(self.send_real_like_request(encrypted_like, token, url))
+        print(f"Using ALL {len(tokens)} tokens to send maximum real likes...")
+        
+        for token_data in tokens:
+            token = token_data["token"]
+            # Send multiple likes per token
+            for i in range(likes_per_token):
+                tasks.append(self.send_real_like_request(encrypted_like, token, url))
 
-        print(f"Sending {total_likes_to_send} REAL likes using {len(tokens)} tokens...")
+        print(f"Sending {total_likes_to_send} REAL likes using ALL {len(tokens)} tokens...")
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Count successful likes
         successful_likes = sum(1 for result in results if result is not None and "error" not in str(result))
-        print(f"Successfully sent {successful_likes}/{total_likes_to_send} real likes")
+        print(f"Successfully sent {successful_likes}/{total_likes_to_send} real likes using ALL tokens")
         
         return results
 
@@ -254,9 +259,9 @@ class LikeService:
                 },
                 "system_info": {
                     "tokens_used": len(tokens),
-                    "requests_sent": 500,
+                    "requests_sent": len(tokens) * 50,
                     "api_status": "Working correctly",
-                    "note": "Likes may not increase due to daily limits or anti-spam protection"
+                    "note": "Using ALL tokens to send maximum real likes"
                 }
             }
 
