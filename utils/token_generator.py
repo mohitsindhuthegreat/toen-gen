@@ -177,7 +177,7 @@ class TokenGenerator:
                 'ReleaseVersion': "OB49"
             }
 
-            response = self.session.post(url, data=bytes.fromhex(edata), headers=headers, verify=False, timeout=5)
+            response = self.session.post(url, data=bytes.fromhex(edata), headers=headers, verify=False, timeout=3)
 
             if response.status_code == 200:
                 example_msg = output_pb2.Garena_420()
