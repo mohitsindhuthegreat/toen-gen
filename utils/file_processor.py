@@ -129,7 +129,7 @@ class FileProcessor:
         """Process uploaded file and extract credentials"""
         try:
             if not file or not self.allowed_file(file.filename):
-                return []
+                return {'error': 'Invalid file type. Only TXT and JSON files are allowed.'}
             
             # Read file content
             content = file.read().decode('utf-8')
@@ -150,8 +150,11 @@ class FileProcessor:
                     unique_credentials.append(cred)
             
             logging.info(f"Extracted {len(unique_credentials)} unique credentials from {file.filename}")
-            return unique_credentials
+            return {
+                'credentials': unique_credentials,
+                'total_found': len(unique_credentials)
+            }
             
         except Exception as e:
             logging.error(f"Error processing file {file.filename}: {str(e)}")
-            return []
+            return {'error': f'Error processing file: {str(e)}'}

