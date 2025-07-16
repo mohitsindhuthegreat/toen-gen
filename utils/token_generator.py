@@ -2,6 +2,14 @@ import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 import binascii
+import os
+import sys
+# Add protobuf directory to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+protobuf_dir = os.path.join(parent_dir, 'protobuf')
+sys.path.append(protobuf_dir)
+
 import my_pb2
 import output_pb2
 import logging
@@ -34,41 +42,60 @@ class TokenGenerator:
         self.session.mount("https://", adapter)
         
     def get_token(self, password, uid):
-        """Get access token from Garena API"""
-        try:
-            url = "https://ffmconnect.live.gop.garenanow.com/oauth/guest/token/grant"
-            headers = {
-                "Host": "100067.connect.garena.com",
-                "User-Agent": "GarenaMSDK/4.0.19P4(G011A ;Android 9;en;US;)",
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "close"
-            }
-            data = {
-                "uid": uid,
-                "password": password,
-                "response_type": "token",
-                "client_type": "2",
-                "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
-                "client_id": "100067"
-            }
-            res = self.session.post(url, headers=headers, data=data, timeout=5)
-            if res.status_code != 200:
-                return None
-            token_json = res.json()
-            if "access_token" in token_json and "open_id" in token_json:
-                return token_json
-            else:
-                return None
-        except requests.exceptions.Timeout:
-            logging.error("Request timed out while getting token")
-            return None
-        except requests.exceptions.ConnectionError:
-            logging.error("Connection error while getting token")
-            return None
-        except Exception as e:
-            logging.error(f"Error getting token: {str(e)}")
-            return None
+        """Get access token from Garena API with retry logic"""
+        import time
+        delays = [0.5, 1, 2, 3]  # Short delays for token requests
+        
+        for attempt, delay in enumerate(delays):
+            try:
+                if attempt > 0:
+                    logging.info(f"Retrying token request (attempt {attempt + 1}) after {delay}s delay...")
+                    time.sleep(delay)
+                
+                url = "https://ffmconnect.live.gop.garenanow.com/oauth/guest/token/grant"
+                headers = {
+                    "Host": "100067.connect.garena.com",
+                    "User-Agent": "GarenaMSDK/4.0.19P4(G011A ;Android 9;en;US;)",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Connection": "close"
+                }
+                data = {
+                    "uid": uid,
+                    "password": password,
+                    "response_type": "token",
+                    "client_type": "2",
+                    "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
+                    "client_id": "100067"
+                }
+                res = self.session.post(url, headers=headers, data=data, timeout=8)
+                
+                if res.status_code == 200:
+                    token_json = res.json()
+                    if "access_token" in token_json and "open_id" in token_json:
+                        return token_json
+                    else:
+                        logging.warning("Invalid response format from token API")
+                        continue
+                elif res.status_code == 429:
+                    logging.warning(f"Rate limited (429), retrying...")
+                    continue
+                else:
+                    logging.warning(f"Token request failed with status {res.status_code}")
+                    continue
+                    
+            except requests.exceptions.Timeout:
+                logging.warning(f"Token request timeout on attempt {attempt + 1}")
+                continue
+            except requests.exceptions.ConnectionError:
+                logging.warning(f"Connection error on attempt {attempt + 1}")
+                continue
+            except Exception as e:
+                logging.warning(f"Token request error on attempt {attempt + 1}: {str(e)}")
+                continue
+        
+        logging.error("All token request attempts failed")
+        return None
 
     def encrypt_message(self, key, iv, plaintext):
         """Encrypt message using AES CBC"""

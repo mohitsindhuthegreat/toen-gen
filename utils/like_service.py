@@ -7,6 +7,14 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from google.protobuf.message import DecodeError
 from google.protobuf.json_format import MessageToJson
+import os
+import sys
+# Add protobuf directory to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+protobuf_dir = os.path.join(parent_dir, 'protobuf')
+sys.path.append(protobuf_dir)
+
 import like_pb2
 import like_count_pb2
 import uid_generator_pb2
@@ -84,11 +92,11 @@ class LikeService:
         # Last resort: try file loading but validate tokens
         try:
             if server_name == "IND":
-                path = "ind_tokens_success.json"
+                path = "data/ind_tokens_success.json"
             elif server_name in {"BR", "US", "SAC", "NA"}:
-                path = "br_tokens_success.json"
+                path = "data/br_tokens_success.json"
             else:
-                path = "bd_tokens_success.json"
+                path = "data/bd_tokens_success.json"
             
             with open(path, "r") as f:
                 tokens = json.load(f)
@@ -208,7 +216,7 @@ class LikeService:
             return None
 
     def make_player_info_request(self, encrypt, server_name, token):
-        """Get player information"""
+        """Get player information with retry logic"""
         if server_name == "IND":
             url = "https://client.ind.freefiremobile.com/GetPlayerPersonalShow"
         elif server_name in {"BR", "US", "SAC", "NA"}:
@@ -229,17 +237,37 @@ class LikeService:
             "ReleaseVersion": "OB49",
         }
         
-        try:
-            response = requests.post(url, data=edata, headers=headers, verify=False, timeout=10)
-            if response.status_code == 200:
-                return self.decode_protobuf(response.content)
-            else:
-                # Log the error for debugging
-                print(f"Player info request failed with status {response.status_code}")
-                return None
-        except Exception as e:
-            print(f"Player info request error: {str(e)}")
-            return None
+        # Try multiple times with different delays
+        import time
+        delays = [1, 3, 5, 10]  # Increasing delay for rate limiting
+        
+        for attempt, delay in enumerate(delays):
+            try:
+                if attempt > 0:
+                    print(f"Retrying player info request (attempt {attempt + 1}) after {delay}s delay...")
+                    time.sleep(delay)
+                
+                response = requests.post(url, data=edata, headers=headers, verify=False, timeout=15)
+                
+                if response.status_code == 200:
+                    result = self.decode_protobuf(response.content)
+                    if result:
+                        return result
+                elif response.status_code == 429:
+                    print(f"Rate limited (429), will retry with longer delay...")
+                    continue
+                else:
+                    print(f"Player info request failed with status {response.status_code}")
+                    
+            except requests.exceptions.Timeout:
+                print(f"Request timeout on attempt {attempt + 1}")
+                continue
+            except Exception as e:
+                print(f"Player info request error on attempt {attempt + 1}: {str(e)}")
+                continue
+        
+        print("All retry attempts failed for player info request")
+        return None
 
     async def process_like_request(self, uid, server_name):
         """Process complete like operation"""
